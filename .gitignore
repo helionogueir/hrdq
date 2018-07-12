@@ -61,4 +61,5 @@ typings/
 .next
 
 # pesonal
+/data
 package-lock.json
