@@ -1,0 +1,20 @@
+{
+    "info": {
+        "name": "",
+        "desciption": ""
+    },
+    "database": {
+        "driver": "",
+        "host": "",
+        "username": "",
+        "password": "",
+        "dbname": "",
+        "port": 0,
+        "charset": ""
+    },
+    "query": {
+        "sql": "",
+        "params": {},
+        "timeout": 1000
+    }
+}

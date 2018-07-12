@@ -1,0 +1,33 @@
+{
+  "name": "hrdq",
+  "version": "1.0.0",
+  "description": "Running Database Queries",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "./node_modules/.bin/mocha ./test --timeout 10000 --recursive"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/helionogueir/hrdq.git"
+  },
+  "keywords": [
+    "db",
+    "database",
+    "query",
+    "sql"
+  ],
+  "author": "Helio Nogueira <helio.nogueir@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/helionogueir/hrdq/issues"
+  },
+  "homepage": "https://github.com/helionogueir/hrdq#readme",
+  "devDependencies": {
+    "mocha": "*"
+  },
+  "dependencies": {
+    "knex": "0.15.0",
+    "mysql": "2.15.0"
+  }
+}
