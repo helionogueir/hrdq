@@ -10,7 +10,28 @@ module.exports = class KillProcess {
      */
     start() {
         try {
-            this.prepareFiles(this.execute);
+            var selfObject = this;
+            var fs = require('fs');
+            var path = require('path');
+            var pattern = new RegExp(/^(.*)\.(json)$/);
+            var directory = path.resolve('./data/module/file/kill');
+            fs.readdir(directory, function (err, files) {
+                if (err) {
+                    throw new Error(err);
+                }
+                files.forEach(function (file) {
+                    try {
+                        if (pattern.test(file)) {
+                            var data = require(path.resolve(directory + '/' + file));
+                            var dbal = selfObject.prepareDbal(data);
+                            selfObject.seekOnes(dbal, data);
+                        }
+                    } catch (ex) {
+                        dbal.close();
+                        throw ex;
+                    }
+                });
+            });
         } catch (ex) {
             throw ex;
         }
@@ -18,39 +39,11 @@ module.exports = class KillProcess {
     }
 
     /**
-     * Prepare files
-     * @param function next
-     * @returns null
-     */
-    prepareFiles(next) {
-        var path = require('path');
-        var fs = require('fs');
-        var pattern = new RegExp(/^(.*)\.(json)$/);
-        var directory = path.resolve('./data/module/file/kill');
-        fs.readdir(directory, function (err, files) {
-            if (err) {
-                throw new Error(err);
-            }
-            files.forEach(function (file) {
-                try {
-                    if (pattern.test(file)) {
-                        var content = require(path.resolve(directory + '/' + file));
-                        next(content);
-                    }
-                } catch (ex) {
-                    throw ex;
-                }
-            });
-        });
-        return null;
-    }
-
-    /**
-     * Execute database process
+     * Prepare DBAL (Database Abstraction Layer)
      * @param Object data
      * @returns null
      */
-    execute(data) {
+    prepareDbal(data) {
         try {
             var path = require('path');
             var common = {
@@ -59,20 +52,78 @@ module.exports = class KillProcess {
                 }
             };
             var dbal = new common.dbal.Knex(data.database);
+            return dbal;
+        } catch (ex) {
+            if (null != dbal) {
+                dbal.close();
+            }
+            return null;
+            throw ex;
+        }
+    }
+
+    /**
+     * Find IDs to kill
+     * @param Knex dbal
+     * @param Object data
+     * @returns null
+     */
+    seekOnes(dbal, data) {
+        try {
+            var selfObject = this;
             var stmt = dbal.connect();
-            stmt.raw('SELECT id, username FROM mdl_user WHERE id in (1, 2)', data.query.params)
-                .timeout(data.query, { cancel: true })
+            stmt.raw(data.query.sql.seek, data.query.params)
+                .timeout(data.query.timeout, { cancel: true })
                 .then(function (response) {
-                    dbal.close();
-                    if ((undefined != response[0]) && (response[0] instanceof Array)) {
-                        response[0].forEach(function (row) {
-                            console.log(row);
-                        });
+                    try {
+                        if ((undefined != response[0]) && (response[0] instanceof Array)) {
+                            response[0].forEach(function (row) {
+                                var timeout = null;
+                                clearTimeout(timeout);
+                                timeout = setTimeout(function () {
+                                    dbal.close();
+                                }, (data.query.timeout / 4));
+                                selfObject.killById(dbal, data, row.id);
+                            });
+                        }
+                    } catch (ex) {
+                        dbal.close();
+                        console.log(ex);
                     }
                 })
                 .catch(function (err) {
                     dbal.close();
                     throw new Error(err);
+                });
+        } catch (ex) {
+            throw ex;
+        }
+        return null;
+    }
+
+    /**
+     * Kill by ID to kill
+     * @param Knex dbal
+     * @param Object data
+     * @param int id
+     * @returns null
+     */
+    killById(dbal, data, id) {
+        try {
+            var stmt = dbal.connect();
+            stmt.raw(data.query.sql.kill, { "id": id })
+                .timeout(data.query.timeout, { cancel: true })
+                .then(function (response) {
+                    console.log('driver: %s | host: %s | dbname: %s | username: %s | kill: %d'
+                        , data.database.driver
+                        , data.database.host + ':' + data.database.port
+                        , data.database.dbname
+                        , data.database.username
+                        , id);
+                })
+                .catch(function (err) {
+                    dbal.close();
+                    console.log(err);
                 });
         } catch (ex) {
             throw ex;

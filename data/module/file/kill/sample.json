@@ -1,20 +1,27 @@
 {
     "info": {
-        "name": "",
-        "desciption": ""
+        "name": "Remove \"SELECTs\" >= 60s",
+        "desciption": "Remove \"SELECTs\" more than 60s of processing."
     },
     "database": {
-        "driver": "",
-        "host": "",
-        "username": "",
-        "password": "",
-        "dbname": "",
-        "port": 0,
-        "charset": ""
+        "driver": "mysql",
+        "host": "172.18.1.2",
+        "username": "root",
+        "password": "root",
+        "dbname": "information_schema",
+        "port": 3306,
+        "charset": "UTF8"
     },
     "query": {
-        "sql": "",
-        "params": {},
-        "timeout": 1000
+        "sql": {
+            "seek": "SELECT id FROM information_schema.processlist WHERE user = :username AND time >= :time AND info LIKE :info",
+            "kill": "KILL :id"
+        },
+        "params": {
+            "username": "root",
+            "time": 5,
+            "info": "SELECT%"
+        },
+        "timeout": 10000
     }
 }
